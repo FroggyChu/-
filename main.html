@@ -5,18 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>계획표 사이트</title>
     <style>
+        /* 기본 스타일 */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f6f9; }
         h1, h2 { text-align: center; color: #333; }
         .container { max-width: 600px; margin: auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); }
         label { font-weight: bold; color: #555; }
-        select, input[type="text"] { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; margin-top: 10px; color: #fff; background-color: #4CAF50; border: none; border-radius: 5px; cursor: pointer; }
+        select, input[type="text"] { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
+        button { padding: 10px 20px; margin-top: 10px; color: #fff; background-color: #4CAF50; border: none; border-radius: 5px; cursor: pointer; width: 100%; }
         button:hover { background-color: #45a049; }
-        .task { margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; display: flex; align-items: center; }
+        .task { margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; display: flex; align-items: center; flex-wrap: wrap; }
         .drag-handle { cursor: move; font-size: 16px; margin-right: 10px; color: #888; }
-        .task-details { display: flex; align-items: center; flex-grow: 1; }
-        .delete-btn { background-color: #ff6666; color: white; border: none; border-radius: 50%; cursor: pointer; padding: 5px; font-size: 14px; margin-left: 10px; }
+        .task-details { display: flex; align-items: center; flex-grow: 1; flex-wrap: wrap; }
         #schedule { margin-top: 20px; padding: 15px; background-color: #e9f5e9; border-radius: 8px; font-weight: bold; color: #333; line-height: 1.6; }
+
+        /* 반응형 스타일 */
+        @media (max-width: 600px) {
+            .container { width: 100%; padding: 10px; }
+            button { width: 100%; }
+            .task { flex-direction: column; align-items: flex-start; }
+            .drag-handle, .task-details { width: 100%; text-align: left; }
+        }
     </style>
 </head>
 <body>
@@ -68,7 +76,7 @@
             <span class="drag-handle">≡</span>
             <div class="task-details">
                 <label>작업 이름:</label>
-                <input type="text" class="task-name" placeholder="수학 공부하기">
+                <input type="text" class="task-name" placeholder="예: 수학 공부하기">
                 <label>작업 시간:</label>
                 <select class="task-duration">
                     ${Array.from({ length: 18 }, (_, i) => {
@@ -80,15 +88,15 @@
                         }</option>`;
                     }).join('')}
                 </select>
+                <button onclick="removeTask(this)" style="color: red; margin-left: 10px;">X</button>
             </div>
-            <button class="delete-btn" onclick="deleteTask(this)">x</button>
         `;
 
         tasksContainer.insertBefore(newTaskDiv, tasksContainer.firstChild);
     }
 
-    function deleteTask(button) {
-        button.parentElement.remove();
+    function removeTask(button) {
+        button.parentElement.parentElement.remove();
         gatherTasks();
     }
 
@@ -125,6 +133,7 @@
         if (remainingTime < 0) {
             equalBreakTime = 0;
             remainingTime = 0;
+            schedule += "경고: 작업 시간이 전체 가능 시간보다 길어서 쉬는 시간 없이 빡빡한 스케줄이 생성됩니다.<br><br>";
         }
 
         taskList.forEach((task, index) => {
@@ -147,22 +156,14 @@
             currentTime = taskEndTime;
 
             if (index < taskList.length - 1 && remainingTime > 0) {
-                let breakStartHour = Math.floor(currentTime);
-                let breakStartMinute = (currentTime % 1) * 60;
-                let breakEndTime = currentTime + equalBreakTime / 60;
-                let breakEndHour = Math.floor(breakEndTime);
-                let breakEndMinute = (breakEndTime % 1) * 60;
-
-                breakStartMinute = Math.round(breakStartMinute);
-                breakEndMinute = Math.round(breakEndMinute);
-
-                if (breakEndMinute === 60) {
-                    breakEndMinute = 0;
-                    breakEndHour += 1;
-                }
-
-                schedule += `${breakStartHour}시 ${breakStartMinute}분 ~ ${breakEndHour}시 ${breakEndMinute}분: 쉬는 시간<br>`;
+                startHour = Math.floor(currentTime);
+                startMinute = (currentTime % 1) * 60;
                 currentTime += equalBreakTime / 60;
+
+                let endBreakHour = Math.floor(currentTime);
+                let endBreakMinute = (currentTime % 1) * 60;
+
+                schedule += `${startHour}시 ${Math.round(startMinute)}분 ~ ${endBreakHour}시 ${Math.round(endBreakMinute)}분: 쉬는 시간<br>`;
             }
         });
 
